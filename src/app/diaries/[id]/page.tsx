@@ -1,5 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Edit2, Trash2, Calendar } from "lucide-react";
 import { deleteDiary } from "./actions";
@@ -12,7 +12,6 @@ export default async function DiaryDetailPage({ params }: PageProps) {
   const { id } = await params;
   const supabase = await createClient();
 
-  // Fetch the specific diary entry
   const { data: diary, error } = await supabase
     .from("diaries")
     .select("*")
@@ -30,7 +29,6 @@ export default async function DiaryDetailPage({ params }: PageProps) {
     weekday: "long",
   });
 
-  // Bind the diary ID to the delete server action
   const deleteDiaryWithId = deleteDiary.bind(null, id);
 
   return (
@@ -56,7 +54,6 @@ export default async function DiaryDetailPage({ params }: PageProps) {
             </Link>
 
             <form action={deleteDiaryWithId} onSubmit={
-              // Add a basic confirmation prompt
               `return confirm("이 일기를 정말 삭제하시겠습니까? 삭제된 일기는 복구할 수 없습니다.");` as any
             }>
               <button
@@ -78,7 +75,7 @@ export default async function DiaryDetailPage({ params }: PageProps) {
           <span>{formattedDate}</span>
         </div>
 
-        <h1 className="text-3xl sm:text-4xl font-bold text-stone-950 tracking-tight leading-tight mb-8 pb-4 border-b border-stone-200">
+        <h1 className="text-3xl sm:text-4xl font-bold text-stone-955 tracking-tight leading-tight mb-8 pb-4 border-b border-stone-200">
           {diary.title}
         </h1>
 
