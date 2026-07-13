@@ -15,7 +15,7 @@ export default async function DiaryDetailPage({ params }: PageProps) {
 
   const { data: diary, error } = await supabase
     .from("diaries")
-    .select("id, title, content, mood, weather, tags, is_favorite, template_type, template_data, entry_date")
+    .select("id, title, content, mood, weather, tags, is_favorite, template_type, template_data, entry_date, diary_images(storage_path, public_url)")
     .eq("id", id)
     .single();
 
@@ -112,6 +112,28 @@ export default async function DiaryDetailPage({ params }: PageProps) {
         <h1 className="text-3xl sm:text-4xl font-bold text-stone-955 tracking-tight leading-tight mb-8 pb-4 border-b border-stone-200">
           {diary.title}
         </h1>
+
+        {/* Attachment Images Gallery */}
+        {diary.diary_images && diary.diary_images.length > 0 && (
+          <div className="grid gap-4 mb-8 sm:grid-cols-2 lg:grid-cols-3">
+            {diary.diary_images.map((img: any) => (
+              <a
+                key={img.storage_path}
+                href={img.public_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative aspect-video sm:aspect-square rounded-xl overflow-hidden border border-stone-200 shadow-sm bg-stone-50"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={img.public_url}
+                  alt="첨부 이미지"
+                  className="h-full w-full object-cover group-hover:scale-105 transition duration-300"
+                />
+              </a>
+            ))}
+          </div>
+        )}
 
         {/* Body Content */}
         {diary.template_type !== "free" && currentTemplate && diary.template_data ? (

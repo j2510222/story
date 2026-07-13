@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Check, Heart, HelpCircle } from "lucide-react";
 import { updateDiary, type UpdateDiaryState } from "./actions";
 import { MOODS, WEATHERS, DIARY_TEMPLATES } from "@/utils/diaryTemplates";
+import ImageUploader from "@/components/ImageUploader";
 
 interface EditFormProps {
   diary: {
@@ -17,6 +18,7 @@ interface EditFormProps {
     is_favorite: boolean;
     template_type: string;
     template_data: any;
+    diary_images: any;
   };
 }
 
@@ -178,6 +180,11 @@ export default function EditForm({ diary }: EditFormProps) {
               className="block w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 placeholder-stone-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 text-sm"
             />
           </div>
+        </div>
+
+        {/* Image Uploader */}
+        <div className="bg-white border border-stone-200 rounded-xl p-5 shadow-sm">
+          <ImageUploader initialImages={diary.diary_images || []} diaryId={diary.id} />
         </div>
 
         {/* Text Editor area */}

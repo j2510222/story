@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Check, Heart, HelpCircle } from "lucide-react";
 import { createDiary, type CreateDiaryState } from "./actions";
 import { MOODS, WEATHERS, DIARY_TEMPLATES } from "@/utils/diaryTemplates";
+import ImageUploader from "@/components/ImageUploader";
 
 export default function NewDiaryPage() {
   const [state, formAction, isPending] = useActionState<CreateDiaryState, FormData>(
@@ -161,6 +162,11 @@ export default function NewDiaryPage() {
                 className="block w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 placeholder-stone-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 text-sm"
               />
             </div>
+          </div>
+
+          {/* Image Uploader */}
+          <div className="bg-white border border-stone-200 rounded-xl p-5 shadow-sm">
+            <ImageUploader />
           </div>
 
           {/* Text Editor area */}

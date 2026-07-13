@@ -51,6 +51,11 @@ export async function updateDiary(
   }
 
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "로그인이 필요합니다." };
+  }
 
   const { error } = await supabase
     .from("diaries")
@@ -69,6 +74,39 @@ export async function updateDiary(
 
   if (error) {
     return { error: error.message };
+  }
+
+  const rawImagePaths = formData.get("imagePaths") as string || "[]";
+  const rawImageUrls = formData.get("imageUrls") as string || "[]";
+
+  try {
+    const imagePaths = JSON.parse(rawImagePaths) as string[];
+    const imageUrls = JSON.parse(rawImageUrls) as string[];
+
+    await supabase
+      .from("diary_images")
+      .delete()
+      .eq("diary_id", id);
+
+    if (imagePaths.length > 0) {
+      const imageInserts = imagePaths.map((path, idx) => ({
+        diary_id: id,
+        user_id: user.id,
+        storage_path: path,
+        public_url: imageUrls[idx] || null,
+        sort_order: idx,
+      }));
+
+      const { error: imgError } = await supabase
+        .from("diary_images")
+        .insert(imageInserts);
+
+      if (imgError) {
+        return { error: `이미지 수정 매핑 오류: ${imgError.message}` };
+      }
+    }
+  } catch (err: any) {
+    return { error: `이미지 수정 처리 오류: ${err.message || err}` };
   }
 
   revalidatePath("/diaries");

@@ -55,21 +55,53 @@ export async function createDiary(prevState: CreateDiaryState, formData: FormDat
 
   const entryDate = new Date().toISOString().split("T")[0];
 
-  const { error } = await supabase.from("diaries").insert({
-    user_id: user.id,
-    title,
-    content,
-    entry_date: entryDate,
-    mood,
-    weather,
-    tags,
-    template_type: templateType,
-    template_data: templateData,
-    is_favorite: isFavorite,
-  });
+  const { data: newDiary, error } = await supabase
+    .from("diaries")
+    .insert({
+      user_id: user.id,
+      title,
+      content,
+      entry_date: entryDate,
+      mood,
+      weather,
+      tags,
+      template_type: templateType,
+      template_data: templateData,
+      is_favorite: isFavorite,
+    })
+    .select("id")
+    .single();
 
-  if (error) {
-    return { error: error.message };
+  if (error || !newDiary) {
+    return { error: error?.message || "일기 저장에 실패했습니다." };
+  }
+
+  const rawImagePaths = formData.get("imagePaths") as string || "[]";
+  const rawImageUrls = formData.get("imageUrls") as string || "[]";
+  
+  try {
+    const imagePaths = JSON.parse(rawImagePaths) as string[];
+    const imageUrls = JSON.parse(rawImageUrls) as string[];
+
+    if (imagePaths.length > 0) {
+      const imageInserts = imagePaths.map((path, idx) => ({
+        diary_id: newDiary.id,
+        user_id: user.id,
+        storage_path: path,
+        public_url: imageUrls[idx] || null,
+        sort_order: idx,
+      }));
+
+      const { error: imgError } = await supabase
+        .from("diary_images")
+        .insert(imageInserts);
+
+      if (imgError) {
+        return { error: `이미지 정보 매핑 오류: ${imgError.message}` };
+      }
+    }
+  } catch (err: any) {
+    return { error: `이미지 처리 오류: ${err.message || err}` };
   }
 
   revalidatePath("/diaries");
