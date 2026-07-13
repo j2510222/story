@@ -25,10 +25,14 @@ export async function updateDiary(
     return { error: "제목을 입력해 주세요." };
   }
 
-  const tags = rawTags
-    .split(",")
-    .map((tag) => tag.trim())
-    .filter((tag) => tag.length > 0);
+  const tags = Array.from(
+    new Set(
+      rawTags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter((tag) => tag.length > 0)
+    )
+  );
 
   let templateData: Record<string, string> = {};
   let content = "";
