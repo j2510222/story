@@ -1,8 +1,9 @@
 import { createClient } from "@/utils/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Edit2, Trash2, Calendar } from "lucide-react";
+import { ArrowLeft, Edit2, Trash2, Calendar, Heart } from "lucide-react";
 import { deleteDiary } from "./actions";
+import { MOODS, WEATHERS, DIARY_TEMPLATES } from "@/utils/diaryTemplates";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -14,7 +15,7 @@ export default async function DiaryDetailPage({ params }: PageProps) {
 
   const { data: diary, error } = await supabase
     .from("diaries")
-    .select("*")
+    .select("id, title, content, mood, weather, tags, is_favorite, template_type, template_data, entry_date")
     .eq("id", id)
     .single();
 
@@ -30,6 +31,10 @@ export default async function DiaryDetailPage({ params }: PageProps) {
   });
 
   const deleteDiaryWithId = deleteDiary.bind(null, id);
+
+  const moodObj = MOODS.find((m) => m.value === diary.mood);
+  const weatherObj = WEATHERS.find((w) => w.value === diary.weather);
+  const currentTemplate = DIARY_TEMPLATES.find((t) => t.type === diary.template_type);
 
   return (
     <main className="min-h-screen bg-[#fbfcf8] text-stone-900 flex flex-col">
@@ -70,20 +75,86 @@ export default async function DiaryDetailPage({ params }: PageProps) {
 
       {/* Content Area */}
       <article className="flex-1 mx-auto w-full max-w-3xl px-4 py-12 sm:px-6">
-        <div className="flex items-center gap-2 text-sm text-stone-500 font-medium mb-6">
-          <Calendar className="size-4 text-emerald-800" />
-          <span>{formattedDate}</span>
+        {/* Date & Favorite Heart */}
+        <div className="flex items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-2 text-sm text-stone-500 font-medium">
+            <Calendar className="size-4 text-emerald-800" />
+            <span>{formattedDate}</span>
+          </div>
+
+          {diary.is_favorite && (
+            <div className="flex items-center gap-1 text-xs font-semibold text-rose-600 bg-rose-50 px-2.5 py-1.5 rounded-lg border border-rose-150 shadow-sm">
+              <Heart className="size-3.5 fill-current" />
+              <span>즐겨찾기</span>
+            </div>
+          )}
         </div>
 
+        {/* Mood and Weather Badges */}
+        {(moodObj || weatherObj) && (
+          <div className="flex flex-wrap gap-2 mb-6">
+            {moodObj && (
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium ${moodObj.color}`}>
+                <span>{moodObj.emoji}</span>
+                <span>오늘 {moodObj.label}</span>
+              </span>
+            )}
+            {weatherObj && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-sky-150 bg-sky-50 text-sky-850 text-xs font-medium">
+                <span>{weatherObj.emoji}</span>
+                <span>날씨 {weatherObj.label}</span>
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Title */}
         <h1 className="text-3xl sm:text-4xl font-bold text-stone-955 tracking-tight leading-tight mb-8 pb-4 border-b border-stone-200">
           {diary.title}
         </h1>
 
-        <div className="text-stone-850 text-base sm:text-lg leading-9 whitespace-pre-wrap break-words">
-          {diary.content || (
-            <span className="text-stone-400 italic">내용이 비어 있는 일기입니다.</span>
-          )}
-        </div>
+        {/* Body Content */}
+        {diary.template_type !== "free" && currentTemplate && diary.template_data ? (
+          <div className="space-y-6">
+            {currentTemplate.questions.map((q) => {
+              const answer = diary.template_data[q.key] || "";
+              if (!answer.trim()) return null;
+
+              return (
+                <div key={q.key} className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm">
+                  <h2 className="text-sm font-semibold text-emerald-800 mb-2">
+                    Q. {q.label}
+                  </h2>
+                  <p className="text-stone-850 text-base leading-8 whitespace-pre-wrap break-words">
+                    {answer}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-stone-850 text-base sm:text-lg leading-9 whitespace-pre-wrap break-words">
+            {diary.content || (
+              <span className="text-stone-400 italic">내용이 비어 있는 일기입니다.</span>
+            )}
+          </div>
+        )}
+
+        {/* Tags footer */}
+        {diary.tags && diary.tags.length > 0 && (
+          <div className="mt-12 pt-6 border-t border-stone-200">
+            <div className="flex flex-wrap gap-1.5">
+              {diary.tags.map((tag: string) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center rounded-lg bg-stone-100 border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600"
+                >
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </article>
     </main>
   );

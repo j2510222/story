@@ -2,7 +2,8 @@ import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { signout } from "./actions";
 import Link from "next/link";
-import { LogOut, PenLine, Plus, Calendar, BookOpen } from "lucide-react";
+import { LogOut, PenLine, Plus, Calendar, BookOpen, Heart } from "lucide-react";
+import { MOODS, WEATHERS } from "@/utils/diaryTemplates";
 
 export default async function DiariesPage() {
   const supabase = await createClient();
@@ -14,7 +15,6 @@ export default async function DiariesPage() {
 
   const displayName = user.user_metadata?.display_name || user.email;
 
-  // Fetch user diaries
   const { data: diaries, error } = await supabase
     .from("diaries")
     .select("*")
@@ -54,7 +54,7 @@ export default async function DiariesPage() {
       <section className="flex-1 mx-auto w-full max-w-5xl px-5 py-8 sm:py-12 sm:px-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-stone-950">
+            <h1 className="text-2xl font-bold tracking-tight text-stone-955">
               나의 일기장
             </h1>
             <p className="mt-1 text-sm text-stone-600">
@@ -80,12 +80,11 @@ export default async function DiariesPage() {
         )}
 
         {!diaries || diaries.length === 0 ? (
-          /* Empty State */
           <div className="rounded-xl border border-dashed border-stone-300 p-16 text-center bg-white shadow-sm flex flex-col items-center justify-center">
             <div className="flex size-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-800 mb-4">
               <BookOpen className="size-6" />
             </div>
-            <h2 className="text-lg font-semibold text-stone-950">일기장이 비어 있습니다</h2>
+            <h2 className="text-lg font-semibold text-stone-955">일기장이 비어 있습니다</h2>
             <p className="mt-2 text-sm text-stone-600 max-w-sm">
               오늘 있었던 작은 생각이나 기억하고 싶은 순간을 일기장에 처음으로 담아 보세요.
             </p>
@@ -98,7 +97,6 @@ export default async function DiariesPage() {
             </Link>
           </div>
         ) : (
-          /* Diary List */
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {diaries.map((diary) => {
               const formattedDate = new Date(diary.entry_date).toLocaleDateString("ko-KR", {
@@ -107,22 +105,65 @@ export default async function DiariesPage() {
                 day: "numeric",
               });
 
+              const moodObj = MOODS.find((m) => m.value === diary.mood);
+              const weatherObj = WEATHERS.find((w) => w.value === diary.weather);
+
               return (
                 <Link
                   key={diary.id}
                   href={`/diaries/${diary.id}`}
-                  className="group block rounded-xl border border-stone-200 bg-white p-5 shadow-sm transition hover:border-emerald-600 hover:shadow-md"
+                  className="group relative flex flex-col justify-between rounded-xl border border-stone-200 bg-white p-5 shadow-sm transition hover:border-emerald-600 hover:shadow-md"
                 >
-                  <div className="flex items-center gap-1.5 text-xs text-stone-500 font-medium mb-3">
-                    <Calendar className="size-3.5" />
-                    <span>{formattedDate}</span>
+                  <div>
+                    <div className="flex items-start justify-between gap-2 mb-3.5">
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex items-center gap-1 text-[11px] text-stone-500 font-medium">
+                          <Calendar className="size-3.5" />
+                          <span>{formattedDate}</span>
+                        </div>
+                        {(moodObj || weatherObj) && (
+                          <div className="flex gap-1.5">
+                            {moodObj && (
+                              <span className="inline-block text-xs" title={`오늘의 감정: ${moodObj.label}`}>
+                                {moodObj.emoji}
+                              </span>
+                            )}
+                            {weatherObj && (
+                              <span className="inline-block text-xs" title={`오늘의 날씨: ${weatherObj.label}`}>
+                                {weatherObj.emoji}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {diary.is_favorite && (
+                        <span className="text-rose-500" title="즐겨찾기">
+                          <Heart className="size-4 fill-current" />
+                        </span>
+                      )}
+                    </div>
+
+                    <h3 className="text-lg font-semibold text-stone-955 group-hover:text-emerald-900 transition line-clamp-1">
+                      {diary.title}
+                    </h3>
+                    <p className="mt-2 text-sm text-stone-600 leading-6 line-clamp-3">
+                      {diary.content || "본문 내용이 없습니다."}
+                    </p>
                   </div>
-                  <h3 className="text-lg font-semibold text-stone-950 group-hover:text-emerald-900 transition line-clamp-1">
-                    {diary.title}
-                  </h3>
-                  <p className="mt-2 text-sm text-stone-600 leading-6 line-clamp-3">
-                    {diary.content || "본문 내용이 없습니다."}
-                  </p>
+
+                  {diary.tags && diary.tags.length > 0 && (
+                    <div className="mt-4 pt-3 border-t border-stone-100 flex flex-wrap gap-1">
+                      {diary.tags.slice(0, 3).map((tag: string) => (
+                        <span key={tag} className="text-[10px] font-semibold text-stone-500">
+                          #{tag}
+                        </span>
+                      ))}
+                      {diary.tags.length > 3 && (
+                        <span className="text-[10px] text-stone-400 font-medium">...</span>
+                      )}
+                    </div>
+                  )}
                 </Link>
               );
             })}

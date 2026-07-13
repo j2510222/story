@@ -12,7 +12,7 @@ export default async function EditDiaryPage({ params }: PageProps) {
 
   const { data: diary, error } = await supabase
     .from("diaries")
-    .select("id, title, content")
+    .select("id, title, content, mood, weather, tags, is_favorite, template_type, template_data")
     .eq("id", id)
     .single();
 
