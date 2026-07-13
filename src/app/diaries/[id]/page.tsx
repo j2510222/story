@@ -167,12 +167,13 @@ export default async function DiaryDetailPage({ params }: PageProps) {
           <div className="mt-12 pt-6 border-t border-stone-200">
             <div className="flex flex-wrap gap-1.5">
               {diary.tags.map((tag: string) => (
-                <span
+                <Link
                   key={tag}
-                  className="inline-flex items-center rounded-lg bg-stone-100 border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600"
+                  href={`/diaries?tag=${encodeURIComponent(tag)}`}
+                  className="inline-flex items-center rounded-lg bg-stone-100 border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-250 transition"
                 >
                   #{tag}
-                </span>
+                </Link>
               ))}
             </div>
           </div>

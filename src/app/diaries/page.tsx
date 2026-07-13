@@ -2,10 +2,16 @@ import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { signout } from "./actions";
 import Link from "next/link";
-import { LogOut, PenLine, Plus, Calendar, BookOpen, Heart } from "lucide-react";
+import { LogOut, PenLine, Plus, Calendar, BookOpen, Heart, X } from "lucide-react";
 import { MOODS, WEATHERS } from "@/utils/diaryTemplates";
 
-export default async function DiariesPage() {
+interface PageProps {
+  searchParams: Promise<{ tag?: string }>;
+}
+
+export default async function DiariesPage({ searchParams }: PageProps) {
+  const { tag } = await searchParams;
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -15,11 +21,18 @@ export default async function DiariesPage() {
 
   const displayName = user.user_metadata?.display_name || user.email;
 
-  const { data: diaries, error } = await supabase
+  // Build the select query dynamically based on tag filter
+  let query = supabase
     .from("diaries")
     .select("*, diary_images(public_url, sort_order)")
     .order("entry_date", { ascending: false })
     .order("created_at", { ascending: false });
+
+  if (tag) {
+    query = query.contains("tags", [tag]);
+  }
+
+  const { data: diaries, error } = await query;
 
   return (
     <main className="min-h-screen bg-[#fbfcf8] text-stone-900 flex flex-col">
@@ -71,6 +84,25 @@ export default async function DiariesPage() {
           </Link>
         </div>
 
+        {/* Tag Filter Indicator */}
+        {tag && (
+          <div className="flex items-center gap-2 mb-6 bg-emerald-50 border border-emerald-150 rounded-xl p-3 px-4 w-fit shadow-sm">
+            <span className="text-sm font-semibold text-emerald-950">
+              #{tag}
+            </span>
+            <span className="text-xs text-emerald-800 font-medium mr-2">
+              태그가 포함된 일기만 모아보는 중입니다.
+            </span>
+            <Link
+              href="/diaries"
+              className="inline-flex size-5 items-center justify-center rounded-full bg-white border border-emerald-200 text-stone-600 hover:bg-stone-50 transition"
+              title="필터 해제"
+            >
+              <X className="size-3" />
+            </Link>
+          </div>
+        )}
+
         {error && (
           <div className="rounded-lg bg-rose-50 p-4 border border-rose-200 mb-6">
             <p className="text-sm text-rose-800 font-medium">
@@ -86,15 +118,24 @@ export default async function DiariesPage() {
             </div>
             <h2 className="text-lg font-semibold text-stone-955">일기장이 비어 있습니다</h2>
             <p className="mt-2 text-sm text-stone-600 max-w-sm">
-              오늘 있었던 작은 생각이나 기억하고 싶은 순간을 일기장에 처음으로 담아 보세요.
+              {tag ? "선택한 태그를 포함하고 있는 일기가 존재하지 않습니다." : "오늘 있었던 작은 생각이나 기억하고 싶은 순간을 일기장에 처음으로 담아 보세요."}
             </p>
-            <Link
-              href="/diaries/new"
-              className="mt-6 inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-emerald-800 px-5 text-sm font-semibold text-white shadow hover:bg-emerald-700 transition"
-            >
-              <Plus className="size-4" />
-              첫 일기 작성하기
-            </Link>
+            {tag ? (
+              <Link
+                href="/diaries"
+                className="mt-6 inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-emerald-800 px-5 text-sm font-semibold text-white shadow hover:bg-emerald-700 transition"
+              >
+                모든 일기 보기
+              </Link>
+            ) : (
+              <Link
+                href="/diaries/new"
+                className="mt-6 inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-emerald-800 px-5 text-sm font-semibold text-white shadow hover:bg-emerald-700 transition"
+              >
+                <Plus className="size-4" />
+                첫 일기 작성하기
+              </Link>
+            )}
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -113,12 +154,11 @@ export default async function DiariesPage() {
                 : null;
 
               return (
-                <Link
+                <div
                   key={diary.id}
-                  href={`/diaries/${diary.id}`}
                   className="group relative flex flex-col justify-between rounded-xl border border-stone-200 bg-white p-5 shadow-sm transition hover:border-emerald-600 hover:shadow-md"
                 >
-                  <div className="flex gap-4 items-start justify-between w-full">
+                  <Link href={`/diaries/${diary.id}`} className="flex gap-4 items-start justify-between w-full flex-1">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 mb-3.5">
                         <div className="flex flex-col gap-1.5">
@@ -167,21 +207,25 @@ export default async function DiariesPage() {
                         />
                       </div>
                     )}
-                  </div>
+                  </Link>
 
                   {diary.tags && diary.tags.length > 0 && (
                     <div className="mt-4 pt-3 border-t border-stone-100 flex flex-wrap gap-1">
-                      {diary.tags.slice(0, 3).map((tag: string) => (
-                        <span key={tag} className="text-[10px] font-semibold text-stone-500">
-                          #{tag}
-                        </span>
+                      {diary.tags.slice(0, 3).map((t: string) => (
+                        <Link
+                          key={t}
+                          href={`/diaries?tag=${encodeURIComponent(t)}`}
+                          className="text-[10px] font-semibold text-stone-500 hover:text-emerald-800 transition hover:underline z-10"
+                        >
+                          #{t}
+                        </Link>
                       ))}
                       {diary.tags.length > 3 && (
                         <span className="text-[10px] text-stone-400 font-medium">...</span>
                       )}
                     </div>
                   )}
-                </Link>
+                </div>
               );
             })}
           </div>
