@@ -17,7 +17,7 @@ export default async function DiariesPage() {
 
   const { data: diaries, error } = await supabase
     .from("diaries")
-    .select("*")
+    .select("*, diary_images(public_url, sort_order)")
     .order("entry_date", { ascending: false })
     .order("created_at", { ascending: false });
 
@@ -108,48 +108,65 @@ export default async function DiariesPage() {
               const moodObj = MOODS.find((m) => m.value === diary.mood);
               const weatherObj = WEATHERS.find((w) => w.value === diary.weather);
 
+              const mainImage = diary.diary_images && diary.diary_images.length > 0
+                ? [...diary.diary_images].sort((a: any, b: any) => a.sort_order - b.sort_order)[0]
+                : null;
+
               return (
                 <Link
                   key={diary.id}
                   href={`/diaries/${diary.id}`}
                   className="group relative flex flex-col justify-between rounded-xl border border-stone-200 bg-white p-5 shadow-sm transition hover:border-emerald-600 hover:shadow-md"
                 >
-                  <div>
-                    <div className="flex items-start justify-between gap-2 mb-3.5">
-                      <div className="flex flex-col gap-1.5">
-                        <div className="flex items-center gap-1 text-[11px] text-stone-500 font-medium">
-                          <Calendar className="size-3.5" />
-                          <span>{formattedDate}</span>
-                        </div>
-                        {(moodObj || weatherObj) && (
-                          <div className="flex gap-1.5">
-                            {moodObj && (
-                              <span className="inline-block text-xs" title={`오늘의 감정: ${moodObj.label}`}>
-                                {moodObj.emoji}
-                              </span>
-                            )}
-                            {weatherObj && (
-                              <span className="inline-block text-xs" title={`오늘의 날씨: ${weatherObj.label}`}>
-                                {weatherObj.emoji}
-                              </span>
-                            )}
+                  <div className="flex gap-4 items-start justify-between w-full">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2 mb-3.5">
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center gap-1 text-[11px] text-stone-500 font-medium">
+                            <Calendar className="size-3.5" />
+                            <span>{formattedDate}</span>
                           </div>
+                          {(moodObj || weatherObj) && (
+                            <div className="flex gap-1.5">
+                              {moodObj && (
+                                <span className="inline-block text-xs" title={`오늘의 감정: ${moodObj.label}`}>
+                                  {moodObj.emoji}
+                                </span>
+                              )}
+                              {weatherObj && (
+                                <span className="inline-block text-xs" title={`오늘의 날씨: ${weatherObj.label}`}>
+                                  {weatherObj.emoji}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {diary.is_favorite && (
+                          <span className="text-rose-500" title="즐겨찾기">
+                            <Heart className="size-4 fill-current" />
+                          </span>
                         )}
                       </div>
 
-                      {diary.is_favorite && (
-                        <span className="text-rose-500" title="즐겨찾기">
-                          <Heart className="size-4 fill-current" />
-                        </span>
-                      )}
+                      <h3 className="text-lg font-semibold text-stone-955 group-hover:text-emerald-900 transition line-clamp-1">
+                        {diary.title}
+                      </h3>
+                      <p className="mt-2 text-sm text-stone-600 leading-6 line-clamp-3">
+                        {diary.content || "본문 내용이 없습니다."}
+                      </p>
                     </div>
 
-                    <h3 className="text-lg font-semibold text-stone-955 group-hover:text-emerald-900 transition line-clamp-1">
-                      {diary.title}
-                    </h3>
-                    <p className="mt-2 text-sm text-stone-600 leading-6 line-clamp-3">
-                      {diary.content || "본문 내용이 없습니다."}
-                    </p>
+                    {mainImage && (
+                      <div className="size-20 rounded-lg overflow-hidden border border-stone-150 bg-stone-50 shrink-0 self-center">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={mainImage.public_url}
+                          alt="대표 이미지"
+                          className="h-full w-full object-cover group-hover:scale-105 transition duration-300"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {diary.tags && diary.tags.length > 0 && (
